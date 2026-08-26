@@ -10,7 +10,7 @@ export const getExamMonitoring = async (req: AuthRequest, res: Response) => {
   const { examId } = req.params;
   try {
     const monitoringData = await prisma.examResult.findMany({
-      where: { exam_id: examId },
+      where: { examSessionId: examId },
       include: { student: { select: { name: true, username: true } } }
     });
     res.status(200).json(monitoringData);
@@ -19,21 +19,27 @@ export const getExamMonitoring = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Tambah Waktu Real-Time
+// Tambah Waktu Real-Time (Update disesuaikan ke ExamSession karena Result tidak memiliki extra_time)
 export const addExtraTime = async (req: AuthRequest, res: Response) => {
   const { resultId } = req.params;
   const { additional_minutes } = req.body;
   try {
-    const current = await prisma.examResult.findUnique({ where: { id: resultId } });
-    if (!current) return res.status(404).json({ error: "Data sesi tidak ditemukan" });
-
-    const newEndTime = new Date(current.actual_end_time.getTime() + additional_minutes * 60000);
-
-    const updated = await prisma.examResult.update({
+    const currentResult = await prisma.examResult.findUnique({ 
       where: { id: resultId },
+      include: { examSession: true }
+    });
+    
+    if (!currentResult) return res.status(404).json({ error: "Data sesi tidak ditemukan" });
+
+    const session = currentResult.examSession;
+    const currentEndTime = session.endTime ? session.endTime.getTime() : Date.now();
+    const newEndTime = new Date(currentEndTime + additional_minutes * 60000);
+
+    const updated = await prisma.examSession.update({
+      where: { id: session.id },
       data: {
-        extra_time_mins: current.extra_time_mins + additional_minutes,
-        actual_end_time: newEndTime
+        extraTime: session.extraTime + additional_minutes,
+        endTime: newEndTime
       }
     });
     res.status(200).json({ message: "Waktu berhasil ditambah", updated });
@@ -47,20 +53,20 @@ export const exportExamResults = async (req: AuthRequest, res: Response) => {
   const { examId } = req.params;
   try {
     const results = await prisma.examResult.findMany({
-      where: { exam_id: examId },
+      where: { examSessionId: examId },
       include: { 
         student: { select: { name: true, username: true } },
-        exam: { select: { title: true } }
+        examSession: { select: { title: true, startTime: true } }
       }
     });
 
     const dataToExport = results.map((item) => ({
       'Nama Siswa': item.student.name,
       'Username / NIS': item.student.username,
-      'Judul Ujian': item.exam.title,
-      'Skor Akhir': item.score ?? 0,
-      'Status': item.is_submitted ? 'Selesai' : 'Belum Selesai',
-      'Waktu Mulai': new Date(item.started_at).toLocaleString('id-ID'),
+      'Judul Ujian': item.examSession.title,
+      'Skor Akhir': item.totalScore ?? 0,
+      'Status': item.submittedAt ? 'Selesai' : 'Belum Selesai',
+      'Waktu Mulai': item.examSession.startTime ? new Date(item.examSession.startTime).toLocaleString('id-ID') : '-',
     }));
 
     const fields = ['Nama Siswa', 'Username / NIS', 'Judul Ujian', 'Skor Akhir', 'Status', 'Waktu Mulai'];
@@ -73,4 +79,21 @@ export const exportExamResults = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     res.status(500).json({ error: "Gagal mengekspor data" });
   }
+};
+
+// -------------------------------------------------------------
+// STUB FUNCTIONS UNTUK MENCEGAH ERROR DI adminRoutes.ts
+// (Anda dapat melengkapi logic ini nanti sesuai kebutuhan)
+// -------------------------------------------------------------
+export const createQuestion = async (req: AuthRequest, res: Response) => { 
+  res.status(501).json({ message: "Fitur Create Question belum diimplementasi" }); 
+};
+export const getQuestionsByExam = async (req: AuthRequest, res: Response) => { 
+  res.status(501).json({ message: "Fitur Get Questions belum diimplementasi" }); 
+};
+export const updateQuestion = async (req: AuthRequest, res: Response) => { 
+  res.status(501).json({ message: "Fitur Update Question belum diimplementasi" }); 
+};
+export const deleteQuestion = async (req: AuthRequest, res: Response) => { 
+  res.status(501).json({ message: "Fitur Delete Question belum diimplementasi" }); 
 };

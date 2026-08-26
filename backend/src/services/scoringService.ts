@@ -4,31 +4,52 @@ const prisma = new PrismaClient();
 export const calculateScore = async (resultId: string) => {
   const result = await prisma.examResult.findUnique({
     where: { id: resultId },
-    include: { exam: { include: { questions: true } } }
+    include: { 
+      examSession: { 
+        include: { subject: { include: { questions: true } } } 
+      } 
+    }
   });
 
   if (!result) throw new Error("Sesi ujian tidak ditemukan");
 
-  const answers = result.answers as Record<string, string>;
-  const questions = result.exam.questions;
+  // Mengambil jawaban siswa dari tabel terpisah (StudentAnswer)
+  const studentAnswers = await prisma.studentAnswer.findMany({
+    where: { studentId: result.studentId }
+  });
   
-  let totalScore = 0;
-  let maxScore = 0;
+  const questions = result.examSession.subject.questions;
+  
+  let correctPG = 0;
+  let totalPG = 0;
 
   questions.forEach((q) => {
-    maxScore += q.points;
-    if (answers[q.id] === q.correct_answer) {
-      totalScore += q.points;
+    if (q.type === 'MULTIPLE_CHOICE') {
+      totalPG++;
+      const ans = studentAnswers.find(a => a.questionId === q.id);
+      if (ans && ans.answerText === q.correctAnswer) {
+        correctPG++;
+      }
     }
   });
 
-  const finalScore = (totalScore / maxScore) * 100;
+  // Kalkulasi nilai Pilihan Ganda (PG)
+  const weightPG = result.examSession.weightPG || 70;
+  const scorePG = totalPG > 0 ? (correctPG / totalPG) * weightPG : 0;
+  
+  // Ambil nilai essay yang sudah ada (jika ada) dan jumlahkan
+  const scoreEssay = result.scoreEssay || 0;
+  const totalScore = scorePG + scoreEssay;
 
   return await prisma.examResult.update({
     where: { id: resultId },
     data: { 
-      score: finalScore,
-      is_submitted: true 
+      correctPG,
+      totalPG,
+      scorePG,
+      totalScore,
+      isAutoSubmitted: true,
+      submittedAt: new Date()
     }
   });
 };

@@ -54,7 +54,7 @@ export const getStudentExamSession = async (req: Request, res: Response): Promis
       where: { studentId, examSessionId: sessionId }
     });
 
-    if (existingResult && existingResult.isSubmitted) {
+    if (existingResult && existingresult.isAutoSubmitted) {
       res.status(403).json({ message: 'Anda sudah menyelesaikan dan mengirim ujian ini sebelumnya.' });
       return;
     }
