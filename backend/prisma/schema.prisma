@@ -1,0 +1,173 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  ESSAY
+}
+
+enum QuestionMode {
+  PG_ONLY
+  ESSAY_ONLY
+  HYBRID
+}
+
+model User {
+  id            String   @id @default(uuid())
+  username      String   @unique
+  email         String?  @unique
+  password      String
+  name          String
+  className     String?  // Kolom Kelas Siswa
+  role          Role     @default(STUDENT)
+  isBanned      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  teacherId       String?
+  createdTeacher  User?   @relation("TeacherToStudents", fields: [teacherId], references: [id], onDelete: SetNull)
+  createdStudents User[]  @relation("TeacherToStudents")
+
+  ownedSubjects     Subject[]     @relation("TeacherSubjects")
+  ownedQuestions    Question[]    @relation("TeacherQuestions")
+  ownedExamSessions ExamSession[] @relation("TeacherExamSessions")
+
+  examResults    ExamResult[]
+  studentAnswers StudentAnswer[]
+  examViolations ExamViolation[]
+
+  @@index([role, isBanned])
+  @@index([teacherId, className])
+}
+
+model Subject {
+  id        String   @id @default(uuid())
+  teacherId String
+  name      String
+  code      String
+  createdAt DateTime @default(now())
+
+  teacher      User          @relation("TeacherSubjects", fields: [teacherId], references: [id], onDelete: Cascade)
+  questions    Question[]
+  examSessions ExamSession[]
+
+  @@unique([teacherId, name])
+  @@index([teacherId])
+}
+
+model Question {
+  id            String       @id @default(uuid())
+  teacherId     String
+  subjectId     String
+  type          QuestionType @default(MULTIPLE_CHOICE)
+  text          String
+  options       Json?
+  correctAnswer String?
+  isDraft       Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @default(now()) @updatedAt
+
+  teacher        User          @relation("TeacherQuestions", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject        Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  studentAnswers StudentAnswer[]
+
+  @@index([teacherId, subjectId])
+}
+
+model ExamSession {
+  id                 String       @id @default(uuid())
+  teacherId          String
+  title              String
+  subjectId          String
+  duration           Int          @default(60)
+  questionMode       QuestionMode @default(HYBRID)
+  weightPG           Float        @default(70)
+  weightEssay        Float        @default(30)
+  targetClasses      String[]     // Array Target Kelas Ujian
+  status             String       @default("PUBLISHED")
+  scheduledPublishAt DateTime?
+  publishedAt        DateTime?
+  endTime            DateTime?
+  extraTime          Int          @default(0)
+  startTime          DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @default(now()) @updatedAt
+
+  teacher        User            @relation("TeacherExamSessions", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject        Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  examResults    ExamResult[]
+  examViolations ExamViolation[]
+
+  @@index([teacherId, scheduledPublishAt])
+}
+
+model ExamResult {
+  id              String   @id @default(uuid())
+  studentId       String
+  examSessionId   String
+  correctPG       Int      @default(0)
+  totalPG         Int      @default(0)
+  scorePG         Float    @default(0)
+  scoreEssay      Float    @default(0)
+  totalScore      Float    @default(0)
+  isAutoSubmitted Boolean  @default(false)
+  submittedAt     DateTime @default(now())
+
+  student     User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examSession ExamSession @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+
+  @@index([examSessionId, studentId])
+  @@index([studentId])
+}
+
+model StudentAnswer {
+  id         String   @id @default(uuid())
+  studentId  String
+  questionId String
+  answerText String
+  score      Float?
+  createdAt  DateTime @default(now())
+
+  student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, questionId])
+}
+
+model ExamViolation {
+  id            String   @id @default(uuid())
+  studentId     String
+  examSessionId String
+  reason        String
+  createdAt     DateTime @default(now())
+
+  student     User        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examSession ExamSession @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+
+  @@index([examSessionId, studentId])
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model GlobalStatsLog {
+  id                String   @id @default(uuid())
+  totalExamFinished Int      @default(0) // Akumulasi ujian yang sudah dilaksanakan
+}

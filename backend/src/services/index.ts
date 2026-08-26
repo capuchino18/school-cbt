@@ -1,0 +1,1 @@
+export { initAutoPurgeCronJob } from './purgeService';
