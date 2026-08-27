@@ -5,9 +5,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 import SpaceBackground from '@/components/SpaceBackground';
-
-// FIX: Gunakan variabel environment Vercel
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_URL } from '@/utils/api';
 
 interface ViolationLog {
   id: string;

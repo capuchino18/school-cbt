@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -26,8 +27,8 @@ export default function AdminDashboard() {
       const headers = { Authorization: `Bearer ${token}` };
 
       const [usersRes, feedbacksRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/admin/users', { headers }),
-        axios.get('http://localhost:5000/api/admin/feedbacks', { headers })
+        axios.get(`${API_URL}/api/admin/users`, { headers }),
+        axios.get(`${API_URL}/api/admin/feedbacks`, { headers })
       ]);
 
       setUsers(usersRes.data || []);
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
   const handleToggleBan = async (id: string, currentStatus: boolean) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/admin/users/${id}/ban`, { isBanned: !currentStatus }, {
+      await axios.put(`${API_URL}/api/admin/users/${id}/ban`, { isBanned: !currentStatus }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showMsg('Status akses pengguna berhasil diperbarui.');

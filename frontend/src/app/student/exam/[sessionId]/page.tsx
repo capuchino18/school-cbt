@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 interface QuestionOption {
   key: string;
@@ -141,7 +142,7 @@ export default function StudentExamRoom() {
     
     setSubmitting(true);
     try {
-      await axios.post(`http://localhost:5000/api/student/exam-sessions/${sessionId}/submit`, {
+      await axios.post(`${API_URL}/api/student/exam-sessions/${sessionId}/submit`, {
         answers,
         isAutoSubmit
       }, getAuthHeader());
@@ -165,7 +166,7 @@ export default function StudentExamRoom() {
     const fetchExamData = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`http://localhost:5000/api/student/exam-sessions/${sessionId}`, getAuthHeader());
+        const res = await axios.get(`${API_URL}/api/student/exam-sessions/${sessionId}`, getAuthHeader());
         
         const fetchedData: ExamSession = res.data;
         
@@ -195,7 +196,7 @@ export default function StudentExamRoom() {
 
     fetchExamData();
 
-    const socket = io('http://localhost:5000', { withCredentials: true });
+    const socket = io(API_URL, { withCredentials: true });
     socketRef.current = socket;
 
     socket.on('connect', () => {
@@ -229,7 +230,7 @@ export default function StudentExamRoom() {
       setViolationReason(reason);
       playAlarmSound();
 
-      axios.post(`http://localhost:5000/api/student/exam-sessions/${sessionId}/violation`, {
+      axios.post(`${API_URL}/api/student/exam-sessions/${sessionId}/violation`, {
         reason
       }, getAuthHeader()).catch(err => console.error('Gagal melapor pelanggaran:', err));
 

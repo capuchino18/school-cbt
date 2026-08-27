@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
 import axios from 'axios';
 import debounce from 'lodash/debounce';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_URL } from '@/utils/api';
 
 export const useExam = (resultId: string) => {
   const [answers, setAnswers] = useState<Record<string, string>>({});

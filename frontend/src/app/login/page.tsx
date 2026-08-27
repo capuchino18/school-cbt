@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function LoginPage() {
   const handleGoogleResponse = async (response: any) => {
     try {
       setLoading(true);
-      const res = await axios.post('http://localhost:5000/api/auth/google-teacher-login', {
+      const res = await axios.post(`${API_URL}/api/auth/google-teacher-login`, {
         credential: response.credential,
       });
 
@@ -94,7 +95,7 @@ export default function LoginPage() {
 
     try {
       if (selectedRole === 'STUDENT') {
-        const res = await axios.post('http://localhost:5000/api/auth/login', {
+        const res = await axios.post(`${API_URL}/api/auth/login`, {
           username: usernameInput.trim(),
           password
         });
@@ -111,7 +112,7 @@ export default function LoginPage() {
 
       } else {
         if (isRegisterMode) {
-          await axios.post('http://localhost:5000/api/auth/register-teacher', {
+          await axios.post(`${API_URL}/api/auth/register-teacher`, {
             name: fullName.trim(),
             username: usernameInput.trim(),
             email: emailInput.trim(),
@@ -124,7 +125,7 @@ export default function LoginPage() {
           setEmailInput('');
           setFullName('');
         } else {
-          const res = await axios.post('http://localhost:5000/api/auth/login', {
+          const res = await axios.post(`${API_URL}/api/auth/login`, {
             username: usernameInput.trim(),
             password
           });

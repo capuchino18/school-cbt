@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 interface Subject {
   id: string;
@@ -37,7 +38,7 @@ export default function TeacherResultsIndexPage() {
 
     if (name) setTeacherName(name);
 
-    axios.get('http://localhost:5000/api/teacher/exam-sessions', {
+    axios.get(`${API_URL}/api/teacher/exam-sessions`, {
       headers: { Authorization: `Bearer ${token}` }
     }).then(res => {
       setExamSessions(res.data || []);

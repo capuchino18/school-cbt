@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 interface QuestionOption {
   key: string;
@@ -69,8 +70,8 @@ export default function TeacherExamsPage() {
   const fetchExamSessionsAndStudents = useCallback(async () => {
     try {
       const [sessionsRes, studentsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/teacher/exam-sessions', getAuthHeader()),
-        axios.get('http://localhost:5000/api/teacher/students', getAuthHeader())
+        axios.get(`${API_URL}/api/teacher/exam-sessions`, getAuthHeader()),
+        axios.get(`${API_URL}/api/teacher/students`, getAuthHeader())
       ]);
 
       setExamSessions(sessionsRes.data);
@@ -149,7 +150,7 @@ export default function TeacherExamsPage() {
   const handleEditExamQuestions = async (sessionId: string) => {
     setLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/teacher/exam-sessions/${sessionId}/questions`, getAuthHeader());
+      const res = await axios.get(`${API_URL}/api/teacher/exam-sessions/${sessionId}/questions`, getAuthHeader());
       const { session, questions: fetchedQuestions } = res.data;
 
       setIsReadOnlyMode(false);
@@ -219,16 +220,16 @@ export default function TeacherExamsPage() {
       const activeSubjectName = subjectName.trim() || 'Mata Pelajaran Umum';
       const cleanTitle = examTitle.trim() || activeSubjectName;
 
-      await axios.post('http://localhost:5000/api/teacher/questions/batch', {
+      await axios.post(`${API_URL}/api/teacher/questions/batch`, {
         subjectName: activeSubjectName,
         questions
       }, getAuthHeader());
 
       if (activeEditingSessionId) {
-        await axios.delete(`http://localhost:5000/api/teacher/exam-sessions/${activeEditingSessionId}`, getAuthHeader());
+        await axios.delete(`${API_URL}/api/teacher/exam-sessions/${activeEditingSessionId}`, getAuthHeader());
       }
 
-      await axios.post('http://localhost:5000/api/teacher/exam-sessions', {
+      await axios.post(`${API_URL}/api/teacher/exam-sessions`, {
         title: cleanTitle,
         subjectName: activeSubjectName,
         duration: examDuration,
@@ -258,16 +259,16 @@ export default function TeacherExamsPage() {
       const activeSubjectName = subjectName.trim() || 'Mata Pelajaran Umum';
       const activeTitle = examTitle.trim() || activeSubjectName;
 
-      await axios.post('http://localhost:5000/api/teacher/questions/batch', {
+      await axios.post(`${API_URL}/api/teacher/questions/batch`, {
         subjectName: activeSubjectName,
         questions
       }, getAuthHeader());
 
       if (activeEditingSessionId) {
-        await axios.delete(`http://localhost:5000/api/teacher/exam-sessions/${activeEditingSessionId}`, getAuthHeader());
+        await axios.delete(`${API_URL}/api/teacher/exam-sessions/${activeEditingSessionId}`, getAuthHeader());
       }
 
-      await axios.post('http://localhost:5000/api/teacher/exam-sessions', {
+      await axios.post(`${API_URL}/api/teacher/exam-sessions`, {
         title: activeTitle,
         subjectName: activeSubjectName,
         duration: examDuration,
@@ -293,7 +294,7 @@ export default function TeacherExamsPage() {
     const fullISOString = new Date(`${scheduledDate}T${scheduledTime}`).toISOString();
 
     try {
-      await axios.put(`http://localhost:5000/api/teacher/exam-sessions/${sessionId}/schedule`, {
+      await axios.put(`${API_URL}/api/teacher/exam-sessions/${sessionId}/schedule`, {
         scheduledPublishAt: fullISOString
       }, getAuthHeader());
 
@@ -310,7 +311,7 @@ export default function TeacherExamsPage() {
   const handleDeleteSession = async (id: string) => {
     if (!confirm('Hapus draf ujian ini?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/teacher/exam-sessions/${id}`, getAuthHeader());
+      await axios.delete(`${API_URL}/api/teacher/exam-sessions/${id}`, getAuthHeader());
       showMsg('Draf ujian dihapus.');
       fetchExamSessionsAndStudents();
     } catch (err) {

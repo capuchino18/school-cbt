@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 interface Student {
   id: string;
@@ -33,7 +34,7 @@ export default function TeacherStudentsPage() {
   const fetchStudents = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/teacher/students', getAuthHeader());
+      const res = await axios.get(`${API_URL}/api/teacher/students`, getAuthHeader());
       setStudents(res.data);
     } catch (err: any) {
       console.error('Fetch students error:', err);
@@ -63,7 +64,7 @@ export default function TeacherStudentsPage() {
   const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/teacher/students', {
+      await axios.post(`${API_URL}/api/teacher/students`, {
         name,
         username,
         password,
@@ -88,7 +89,7 @@ export default function TeacherStudentsPage() {
     if (!confirm(`Apakah Anda yakin ingin menghapus siswa ${studentName}?`)) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/teacher/students/${id}`, getAuthHeader());
+      await axios.delete(`${API_URL}/api/teacher/students/${id}`, getAuthHeader());
       setMessage({ type: 'success', text: 'Siswa berhasil dihapus.' });
       fetchStudents();
     } catch (err: any) {

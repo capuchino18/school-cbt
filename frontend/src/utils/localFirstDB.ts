@@ -1,5 +1,6 @@
 import Dexie, { Table } from 'dexie';
 import axios from 'axios';
+import { API_URL } from '@/utils/api';
 
 // 1. DEFINISI DATABASE LOKAL DI MEMORI DEVICE USER (IndexedDB)
 export interface LocalQuestion {
@@ -89,7 +90,7 @@ export async function syncLocalDataToServer() {
     for (const subjectName of Object.keys(groupedBySubject)) {
       const questionsList = groupedBySubject[subjectName];
 
-      await axios.post('http://localhost:5000/api/teacher/questions/batch', {
+      await axios.post(`${API_URL}/api/teacher/questions/batch`, {
         subjectName,
         questions: questionsList
       }, {

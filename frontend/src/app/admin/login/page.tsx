@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { API_URL } from '@/utils/api';
 
 export default function AdminGoogleLogin() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function AdminGoogleLogin() {
     setErrorMsg('');
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/google-admin-login', {
+      const res = await axios.post(`${API_URL}/api/auth/google-admin-login`, {
         credential: response.credential,
       });
 

@@ -1,8 +1,6 @@
 import axios from 'axios';
 import { Question } from '@/types/exam';
-
-// FIX: Gunakan variabel environment Vercel, atau fallback ke localhost jika di komputer
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_URL } from '@/utils/api';
 
 export async function fetchExamQuestions(examId: string, token: string): Promise<Question[]> {
   const response = await axios.get(`${API_URL}/api/exams/${examId}/questions`, {

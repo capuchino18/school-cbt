@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 interface ExamSession {
   id: string;
@@ -39,7 +40,7 @@ export default function TeacherDashboard() {
 
   const fetchPublishedSessions = useCallback(async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/teacher/exam-sessions', getAuthHeader());
+      const res = await axios.get(`${API_URL}/api/teacher/exam-sessions`, getAuthHeader());
       // Hanya ambil sesi yang statusnya PUBLISHED untuk ditampilkan di dashboard utama
       const published = res.data.filter((s: ExamSession) => s.status === 'PUBLISHED');
       setExamSessions(published);
@@ -93,7 +94,7 @@ export default function TeacherDashboard() {
   const handleDeleteSession = async (id: string) => {
     if (!confirm('Hapus sesi ujian aktif ini secara permanen?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/teacher/exam-sessions/${id}`, getAuthHeader());
+      await axios.delete(`${API_URL}/api/teacher/exam-sessions/${id}`, getAuthHeader());
       showMsg('Sesi ujian berhasil dihapus.');
       fetchPublishedSessions();
     } catch (err) {

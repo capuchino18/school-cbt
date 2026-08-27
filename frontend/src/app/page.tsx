@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/public/stats');
+        const res = await axios.get(`${API_URL}/api/public/stats`);
         setStats(res.data);
       } catch (err) {
         console.error('Gagal mengambil statistik publik:', err);
@@ -36,7 +37,7 @@ export default function LandingPage() {
     setFeedbackLoading(true);
     setFeedbackStatus(null);
     try {
-      await axios.post('http://localhost:5000/api/public/feedback', {
+      await axios.post(`${API_URL}/api/public/feedback`, {
         name: feedbackName,
         email: feedbackEmail,
         message: feedbackMessage

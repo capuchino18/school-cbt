@@ -16,12 +16,14 @@ dotenv.config();
 const app: Express = express();
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
-const googleClient = new OAuth2Client(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID);
 
 // ==========================================
 // 1. MIDDLEWARE SETUP
 // ==========================================
-app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+const allowedOrigin = process.env.CLIENT_URL || 'http://localhost:3000';
+
+app.use(cors({ origin: allowedOrigin, credentials: true }));
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
@@ -31,7 +33,7 @@ app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: allowedOrigin,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
   }
@@ -54,13 +56,11 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// Endpoint Publik untuk Landing Page Stats
 app.get('/api/public/stats', async (req: Request, res: Response) => {
   try {
     const teacherCount = await (prisma.user as any).count({ where: { role: 'TEACHER' } });
     const studentCount = await (prisma.user as any).count({ where: { role: 'STUDENT' } });
     
-    // Hitung total ujian yang sudah dilaksanakan (akumulasi history permanen + sesi saat ini)
     const currentSessionsCount = await (prisma.examSession as any).count();
     const statsLog = await (prisma as any).globalStatsLog.findFirst();
     const totalExamsExecuted = (statsLog ? statsLog.totalExamFinished : 0) + currentSessionsCount;
@@ -75,7 +75,6 @@ app.get('/api/public/stats', async (req: Request, res: Response) => {
   }
 });
 
-// Endpoint Publik Kirim Kritik & Saran
 app.post('/api/public/feedback', async (req: Request, res: Response) => {
   try {
     const { name, email, message } = req.body;
@@ -152,7 +151,6 @@ function initAutoPurgeCronJob() {
       
       const expiredSessionIds = expiredSessions.map((s: any) => s.id);
       
-      // Catat akumulasi ke GlobalStatsLog sebelum dihapus agar data statistik ujian dilaksanakan tetap abadi
       let statsLog = await (prisma as any).globalStatsLog.findFirst();
       if (!statsLog) {
         statsLog = await (prisma as any).globalStatsLog.create({ data: { totalExamFinished: expiredSessionIds.length } });
@@ -320,9 +318,19 @@ app.get('/api/auth/google', (req: Request, res: Response) => {
 app.post('/api/auth/google-teacher-login', async (req: Request, res: Response) => {
   try {
     const { credential } = req.body;
+    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+    if (!clientId) {
+      return res.status(500).json({ message: 'Google Client ID belum dikonfigurasi di server backend (.env)' });
+    }
+
+    if (!credential) {
+      return res.status(400).json({ message: 'Google credential token tidak ditemukan.' });
+    }
+
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
-      audience: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+      audience: clientId.trim(),
     });
     const payload = ticket.getPayload();
     if (!payload || !payload.email) return res.status(400).json({ message: 'Google Auth Gagal' });
@@ -336,10 +344,23 @@ app.post('/api/auth/google-teacher-login', async (req: Request, res: Response) =
       where: { email: userEmail }
     });
 
+    // Jika user belum ada di database, buat akun baru
     if (!user) {
+      // FIX: Generate username unik menggunakan prefix email dan karakter acak agar tidak bernilai 'null'
+      const emailPrefix = userEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+      const randomSuffix = Math.random().toString(36).substring(2, 6);
+      const generatedUsername = `g_${emailPrefix}_${randomSuffix}`;
+
       const randomPassword = await bcrypt.hash(Math.random().toString(36), 10);
+      
       user = await (prisma.user as any).create({
-        data: { username: null, email: userEmail, name: userName, password: randomPassword, role: targetRole }
+        data: { 
+          username: generatedUsername, 
+          email: userEmail, 
+          name: userName, 
+          password: randomPassword, 
+          role: targetRole 
+        }
       });
     }
 
@@ -351,12 +372,13 @@ app.post('/api/auth/google-teacher-login', async (req: Request, res: Response) =
 
     return res.json({ token, role: user.role, name: user.name, userId: user.id });
   } catch (error: any) {
+    console.error('DETAIL GOOGLE AUTH ERROR:', error.message || error);
     return res.status(401).json({ message: 'Verifikasi Google Gagal', details: error.message });
   }
 });
 
 // ==========================================
-// 7. ADMIN & TEACHER APIs (Termasuk Feedback Admin)
+// 7. ADMIN & TEACHER APIs
 // ==========================================
 
 app.get('/api/admin/users', authenticate, authorize(['ADMIN']), async (req: AuthRequest, res: Response) => {
@@ -393,7 +415,6 @@ app.get('/api/admin/users', authenticate, authorize(['ADMIN']), async (req: Auth
   }
 });
 
-// Endpoint Admin untuk melihat Kritik & Saran
 app.get('/api/admin/feedbacks', authenticate, authorize(['ADMIN']), async (req: AuthRequest, res: Response) => {
   try {
     const feedbacks = await (prisma as any).feedback.findMany({
@@ -441,7 +462,7 @@ app.post('/api/teacher/students', authenticate, authorize(['TEACHER', 'ADMIN']),
       where: { username: { equals: cleanUsername, mode: 'insensitive' } }
     });
     if (existingStudentUsername) {
-      return res.status(400).json({ message: `Username "${cleanUsername}" sudah digunakan oleh orang lain. Guru wajib menginput username yang berbeda.` });
+      return res.status(400).json({ message: `Username "${cleanUsername}" sudah digunakan oleh orang lain.` });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -545,7 +566,6 @@ app.put('/api/teacher/exam-sessions/:id/schedule', authenticate, authorize(['TEA
 });
 
 app.delete('/api/teacher/exam-sessions/:id', authenticate, authorize(['TEACHER', 'ADMIN']), async (req: AuthRequest, res: Response) => {
-  // Sebelum menghapus sesi, tambahkan hitungan ke GlobalStatsLog agar data statistik ujian dilaksanakan tetap terhitung abadi
   let statsLog = await (prisma as any).globalStatsLog.findFirst();
   if (!statsLog) {
     await (prisma as any).globalStatsLog.create({ data: { totalExamFinished: 1 } });

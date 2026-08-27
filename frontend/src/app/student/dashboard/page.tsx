@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 interface ExamSession {
   id: string;
@@ -26,7 +27,7 @@ export default function StudentDashboardPage() {
   const fetchExamSessions = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/student/exam-sessions', {
+      const res = await axios.get(`${API_URL}/api/student/exam-sessions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setExamSessions(res.data);

@@ -5,6 +5,7 @@ import axios from 'axios';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 interface ViolationLog {
   id: string;
@@ -36,7 +37,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   const fetchMonitoringData = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`http://localhost:5000/api/teacher/exam-sessions/${sessionId}/monitoring`, {
+      const res = await axios.get(`${API_URL}/api/teacher/exam-sessions/${sessionId}/monitoring`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setViolations(res.data);
@@ -54,7 +55,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
       return;
     }
 
-    axios.get(`http://localhost:5000/api/teacher/exam-sessions/${sessionId}/questions`, {
+    axios.get(`${API_URL}/api/teacher/exam-sessions/${sessionId}/questions`, {
       headers: { Authorization: `Bearer ${token}` }
     }).then(res => {
       if (res.data?.session?.title) {
@@ -64,7 +65,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
 
     fetchMonitoringData();
 
-    const newSocket = io('http://localhost:5000', { withCredentials: true });
+    const newSocket = io(API_URL, { withCredentials: true });
     setSocket(newSocket);
 
     newSocket.emit('JOIN_EXAM_ROOM', { sessionId });
@@ -82,7 +83,7 @@ export default function ExamMonitoringPage({ params }: { params: Promise<{ id: s
   const handleAddTime = async (minutes: number) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/teacher/exam-sessions/${sessionId}/add-time`, { minutes }, {
+      await axios.post(`${API_URL}/api/teacher/exam-sessions/${sessionId}/add-time`, { minutes }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       showMsg(`Berhasil menambah waktu ujian selama ${minutes} menit.`);

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 interface StudentAnswer {
   questionId: string;
@@ -66,7 +67,7 @@ export default function TeacherExamResultDetailPage({ params }: { params: { id: 
       }
 
       // Ambil detail sesi ujian (judul)
-      const sessionRes = await axios.get(`http://localhost:5000/api/teacher/exam-sessions/${sessionId}/questions`, {
+      const sessionRes = await axios.get(`${API_URL}/api/teacher/exam-sessions/${sessionId}/questions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (sessionRes.data?.session?.title) {
@@ -74,13 +75,13 @@ export default function TeacherExamResultDetailPage({ params }: { params: { id: 
       }
 
       // Ambil hasil nilai siswa
-      const resultsRes = await axios.get(`http://localhost:5000/api/teacher/exam-results/${sessionId}`, {
+      const resultsRes = await axios.get(`${API_URL}/api/teacher/exam-results/${sessionId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setExamResults(resultsRes.data || []);
 
       // Ambil log pelanggaran monitoring
-      const monitoringRes = await axios.get(`http://localhost:5000/api/teacher/exam-sessions/${sessionId}/monitoring`, {
+      const monitoringRes = await axios.get(`${API_URL}/api/teacher/exam-sessions/${sessionId}/monitoring`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setViolations(monitoringRes.data || []);
@@ -101,14 +102,14 @@ export default function TeacherExamResultDetailPage({ params }: { params: { id: 
   }, [fetchData]);
 
   const handleExportExcel = () => {
-    window.open(`http://localhost:5000/api/teacher/export-results/${sessionId}`, '_blank');
+    window.open(`${API_URL}/api/teacher/export-results/${sessionId}`, '_blank');
   };
 
   const handleClearExamHistory = async () => {
     if (!confirm('Hapus SELURUH RIWAYAT HASIL UJIAN dan nilai siswa pada sesi ini secara permanen?')) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/teacher/exam-results/clear/${sessionId}`, getAuthHeader());
+      await axios.delete(`${API_URL}/api/teacher/exam-results/clear/${sessionId}`, getAuthHeader());
       showMsg('Riwayat hasil ujian berhasil dibersihkan.');
       setExamResults([]);
     } catch (err) {

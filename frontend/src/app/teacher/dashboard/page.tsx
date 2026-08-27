@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import SpaceBackground from '@/components/SpaceBackground';
+import { API_URL } from '@/utils/api';
 
 interface ExamSession {
   id: string;
@@ -68,7 +69,7 @@ export default function TeacherDashboard() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const res = await axios.get('http://localhost:5000/api/teacher/exam-sessions', {
+      const res = await axios.get(`${API_URL}/api/teacher/exam-sessions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -110,7 +111,7 @@ export default function TeacherDashboard() {
   const handleDeleteSession = async (id: string) => {
     if (!confirm('Hapus sesi ujian aktif ini secara permanen?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/teacher/exam-sessions/${id}`, getAuthHeader());
+      await axios.delete(`${API_URL}/api/teacher/exam-sessions/${id}`, getAuthHeader());
       showMsg('Sesi ujian berhasil dihapus.');
       fetchPublishedSessions();
     } catch (err) {

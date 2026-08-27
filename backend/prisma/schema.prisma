@@ -1,10 +1,11 @@
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
 generator client {
   provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -25,20 +26,20 @@ enum QuestionMode {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  username      String   @unique
-  email         String?  @unique
-  password      String
-  name          String
-  className     String?  // Kolom Kelas Siswa
-  role          Role     @default(STUDENT)
-  isBanned      Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  id              String   @id @default(uuid())
+  username        String   @unique
+  email           String?  @unique
+  password        String
+  name            String
+  className       String?  // Kolom Kelas Siswa
+  role            Role     @default(STUDENT)
+  isBanned        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
 
   teacherId       String?
-  createdTeacher  User?   @relation("TeacherToStudents", fields: [teacherId], references: [id], onDelete: SetNull)
-  createdStudents User[]  @relation("TeacherToStudents")
+  createdTeacher  User?    @relation("TeacherToStudents", fields: [teacherId], references: [id], onDelete: SetNull)
+  createdStudents User[]   @relation("TeacherToStudents")
 
   ownedSubjects     Subject[]     @relation("TeacherSubjects")
   ownedQuestions    Question[]    @relation("TeacherQuestions")
@@ -79,8 +80,8 @@ model Question {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @default(now()) @updatedAt
 
-  teacher        User          @relation("TeacherQuestions", fields: [teacherId], references: [id], onDelete: Cascade)
-  subject        Subject       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  teacher        User            @relation("TeacherQuestions", fields: [teacherId], references: [id], onDelete: Cascade)
+  subject        Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   studentAnswers StudentAnswer[]
 
   @@index([teacherId, subjectId])
@@ -168,6 +169,6 @@ model Feedback {
 }
 
 model GlobalStatsLog {
-  id                String   @id @default(uuid())
-  totalExamFinished Int      @default(0) // Akumulasi ujian yang sudah dilaksanakan
+  id                String @id @default(uuid())
+  totalExamFinished Int    @default(0) // Akumulasi ujian yang sudah dilaksanakan
 }
